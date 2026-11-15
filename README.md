@@ -16,7 +16,7 @@ crystal-www27/
 │   ├── data/                 # Pipeline outputs & weights (not included — see below)
 │   ├── common.py             # Shared utilities (is_displayable, etc.)
 │   ├── prepare_data.py       # Source CSV → articles.jsonl / users.jsonl
-│   ├── veracity/             # RoBERTa veracity predictor (load, predict, temperature scaling)
+│   ├── veracity/             # Veracity: published fact-check lookup → RoBERTa fallback (temperature scaling)
 │   ├── keyword/              # Deceptive keyword & sentence highlighting pipeline
 │   ├── event/                # Event clustering & opposing-veracity matching
 │   ├── recsys/               # CROWN recommendation, feed generation, veracity distribution
@@ -72,6 +72,7 @@ Data files are not included in the repository. Obtain the source data from [Fake
 |---|---|---|
 | RoBERTa | `roberta-base` fine-tuned (`roberta_veracity/`) | Veracity prediction (10-fold out-of-fold + temperature scaling) |
 | CROWN | [seongeunryu/crown-www25](https://github.com/seongeunryu/crown-www25) | Personalized recommendation |
+| Fact Check Tools API | [Google Fact Check Tools](https://developers.google.com/fact-check/tools/api) | Veracity verdict from a published fact-check when one exists (otherwise RoBERTa) |
 
 Download the trained models from [Google Drive](https://drive.google.com/drive/folders/1dOpC3oqhkjTOJ7uKgsDZmscVZf4ofvYp?usp=sharing).
 The final layout should be:
@@ -98,10 +99,12 @@ Run all commands from the project root. On Windows PowerShell, prefix each comma
 python -X utf8 crystal/prepare_data.py          # Source CSV → articles.jsonl / users.jsonl
 ```
 
-### 2 — Veracity prediction (RoBERTa)
+### 2 — Veracity prediction
 ```bash
-python -X utf8 roberta_veracity/train_kfold.py  # 10-fold training + temperature scaling
-python -X utf8 crystal/veracity/predict.py      # Attach pred_prob_fake / final_label to all articles
+python -X utf8 roberta_veracity/train_kfold.py       # 10-fold training + temperature scaling
+set FACTCHECK_API_KEY=...                             # optional: Google Fact Check Tools API key
+python -X utf8 crystal/veracity/factcheck.py         # look up published fact-checks → cache (matched articles only)
+python -X utf8 crystal/veracity/predict.py           # merge: fact-check verdict if matched, else RoBERTa
 ```
 
 ### 3 — Recommendation feed generation (CROWN)

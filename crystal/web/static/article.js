@@ -23,11 +23,14 @@
   function renderSide() {
     const conf = art.prob; // 판정된 라벨의 확률 (서버 prob_of와 동일 기준, 2026-11-03)
     const bar = `<div class="vbar ${label === 1 ? "lv4" : "lv0"}"><span>${C.name(label)}</span>${conf == null ? "" : `<span class="pc">${C.pct(conf, 2)}</span>`}</div>`;
+    // 팩트체크로 판정된 기사는 출처(기관명 + 링크 + 등급)를 verdict 아래에 표시 (논문 2.2)
+    const fc = (art.veracity_source === "factcheck" && art.factcheck) ? art.factcheck : null;
+    const src = fc ? `<div class="vsrc" style="font-size:12px;margin-top:6px;color:#52514e">Fact-checked by ${fc.url ? `<a href="${C.esc(fc.url)}" target="_blank" rel="noopener">${C.esc(fc.publisher || "source")} ↗</a>` : C.esc(fc.publisher || "source")}${fc.rating ? ` — “${C.esc(fc.rating)}”` : ""}</div>` : "";
     const opp = art.counterparts.filter(c => c.final_label !== label).slice(0, 2);
     const cps = opp.length
       ? opp.map(c => `<div class="bin ${c.final_label === 1 ? "l4" : "l0"}"><div class="cp" data-id="${C.esc(c.article_id)}"><div class="t">${C.esc(c.title)}</div><div class="m">${C.chip(c.final_label)}</div></div></div>`).join("")
       : `<div class="bin l2"><div class="none">no articles available</div></div>`;
-    side.innerHTML = `<div class="card"><h3>Predicted Veracity</h3>${bar}
+    side.innerHTML = `<div class="card"><h3>Predicted Veracity</h3>${bar}${src}
         <button class="why-toggle"><span class="star">✦</span>Why this verdict? <span class="car">▾</span></button><p class="why-text" hidden></p></div>
       <div class="card"><h3>Explore Related Articles</h3>${cps}</div>`;
     side.querySelectorAll(".cp").forEach(el => el.addEventListener("click", () => openSplit(el.dataset.id, true)));
